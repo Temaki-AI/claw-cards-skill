@@ -265,11 +265,12 @@ try:
     with urlopen(req, timeout=30) as resp:
         result = json.loads(resp.read())
     
-    # Save bot_id for future updates
+    # Save bot_id for future updates (first publish only)
     returned_bot_id = result.get('bot_id')
     if returned_bot_id:
         bot_id_file.write_text(returned_bot_id)
-        print(f"   🔑 Bot ID saved to .claw-card-bot-id")
+        os.chmod(bot_id_file, 0o600)  # Owner read/write only — bot_id is a secret
+        print(f"   🔑 Bot ID saved to .claw-card-bot-id (chmod 600)")
     
     print(f"\n🎉 Card published!")
     print(f"   🆔 ID: {result.get('id')}")
