@@ -10,18 +10,17 @@ from urllib.error import HTTPError
 workspace = Path(sys.argv[1]) if len(sys.argv) > 1 else Path.home()
 creds_file = workspace / ".credentials" / "claw-cards.json"
 
-api_url = os.environ.get("CLAW_CARDS_API_URL", "")
+api_url = os.environ.get("CLAW_CARDS_API_URL", "https://clawv.com")
 api_key = os.environ.get("CLAW_CARDS_API_KEY", "")
 
-if creds_file.exists() and (not api_url or not api_key):
+if creds_file.exists():
     creds = json.loads(creds_file.read_text())
-    api_url = api_url or creds.get("api_url", "")
+    api_url = api_url or creds.get("api_url", "https://clawv.com")
     api_key = api_key or creds.get("api_key", "")
 
-if not api_url or not api_key:
-    print("❌ Missing credentials. Create", creds_file)
-    print('{"api_url": "https://...", "api_key": "your_key"}')
-    sys.exit(1)
+# No credentials required — publish is open. API key is optional.
+if not api_url:
+    api_url = "https://clawv.com"
 
 # ── Read files safely ──
 def read(path):
@@ -170,7 +169,6 @@ flavor_lines = [l.strip() for l in soul.splitlines() if l.strip() and not l.star
 flavor = flavor_lines[0][:100] if flavor_lines else f"A {card_type.lower()} agent"
 
 # ── Build Payload ──
-import socket
 payload = {
     "agent": {
         "name": name, "emoji": emoji, "type": card_type,
@@ -180,7 +178,6 @@ payload = {
     "health": {"score": health},
     "stats": {"claw": claw, "shell": shell, "surge": surge, "cortex": cortex, "aura": aura},
     "meta": {
-        "hostname": socket.gethostname(),
         "channels": channels,
         "version": "1.0.0",
         "published_at": __import__('datetime').datetime.utcnow().isoformat() + "Z"
@@ -195,13 +192,13 @@ print(f"\n📦 Publishing to {api_url}...")
 
 # ── Send to API ──
 try:
+    headers = {"Content-Type": "application/json"}
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
     req = Request(
         f"{api_url}/api/publish",
         data=json.dumps(payload).encode(),
-        headers={
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {api_key}"
-        },
+        headers=headers,
         method="POST"
     )
     with urlopen(req, timeout=30) as resp:
