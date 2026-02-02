@@ -65,34 +65,76 @@ elif re.search(r'protect|guard|security|defend', soul_lower): card_type = "GUARD
 elif re.search(r'fast|scout|explore|discover', soul_lower): card_type = "SCOUT"
 elif re.search(r'oracle|predict|vision|monitor', soul_lower): card_type = "ORACLE"
 
-# Model (try gateway config)
+# Model & Channels (read gateway config directly)
 model = "unknown"
-try:
-    out = subprocess.run(["clawdbot", "status"], capture_output=True, text=True, timeout=5)
-    m = re.search(r'model[:\s]+(\S+)', out.stdout)
-    if m: model = m.group(1)
-except: pass
-
-# Channels
 channels = []
-try:
-    out = subprocess.run(["clawdbot", "status"], capture_output=True, text=True, timeout=5)
-    for ch in ["telegram", "discord", "slack", "signal", "whatsapp"]:
-        if ch in out.stdout.lower(): channels.append(ch)
-except: pass
+
+def read_gateway_config():
+    """Read clawdbot gateway config to extract model and channels for this agent."""
+    config_paths = [
+        Path.home() / ".clawdbot" / "clawdbot.json",
+        Path.home() / ".config" / "clawdbot" / "clawdbot.json",
+    ]
+    for cp in config_paths:
+        if cp.exists():
+            try:
+                return json.loads(cp.read_text())
+            except:
+                pass
+    return None
+
+gw_config = read_gateway_config()
+if gw_config:
+    # Extract channels
+    ch_conf = gw_config.get("channels", {})
+    if isinstance(ch_conf, dict):
+        channels = list(ch_conf.keys())
+    elif isinstance(ch_conf, list):
+        channels = ch_conf
+
+    # Extract model — check agent-specific first, then defaults
+    agent_list = gw_config.get("agents", {}).get("list", [])
+    agent_conf = next((a for a in agent_list if a.get("workspace") == str(workspace)), None)
+    agent_model = agent_conf.get("model") if agent_conf else None
+
+    # Resolve "default" to the actual default model
+    if not agent_model or agent_model == "default":
+        defaults = gw_config.get("agents", {}).get("defaults", {})
+        model_conf = defaults.get("model", {})
+        if isinstance(model_conf, dict):
+            agent_model = model_conf.get("primary", "")
+        elif isinstance(model_conf, str):
+            agent_model = model_conf
+
+    if agent_model and agent_model != "default":
+        model = agent_model
+
+# Fallback: try clawdbot status if config read failed
+if model == "unknown":
+    try:
+        out = subprocess.run(["clawdbot", "status"], capture_output=True, text=True, timeout=5)
+        m = re.search(r'model[:\s]+(\S+)', out.stdout)
+        if m: model = m.group(1)
+    except: pass
 
 # ── Mechanical Data Collection (all countable, zero AI) ──
 mem_dir = workspace / "memory"
 knowledge_dir = workspace / "knowledge"
 creds_dir = workspace / ".credentials"
-skills_dir = Path.home() / ".local" / "share" / "clawdbot" / "skills"
+
+# Skills: check multiple possible locations
+skills_dirs = [
+    Path.home() / ".clawdbot" / "skills",
+    Path.home() / ".local" / "share" / "clawdbot" / "skills",
+]
+skills_dir = next((d for d in skills_dirs if d.exists()), None)
 
 # File counts
 memory_files = len(list(mem_dir.glob("*.md"))) if mem_dir.exists() else 0
 memory_bytes = sum(f.stat().st_size for f in mem_dir.rglob("*") if f.is_file()) if mem_dir.exists() else 0
 knowledge_bytes = sum(f.stat().st_size for f in knowledge_dir.rglob("*") if f.is_file()) if knowledge_dir.exists() else 0
 credentials_count = len(list(creds_dir.glob("*.json"))) if creds_dir.exists() else 0
-skills_count = len(list(skills_dir.iterdir())) if skills_dir.exists() else 0
+skills_count = len(list(skills_dir.iterdir())) if skills_dir and skills_dir.exists() else 0
 
 # Text metrics
 soul_words = len(soul.split()) if soul else 0
@@ -121,8 +163,9 @@ if mem_dir.exists():
             agent_age_days = max(0, delta.days)
         except: pass
 
-# Model tier: opus=3, sonnet=2, haiku=1, other=1
-model_tier = 3 if 'opus' in model else 2 if 'sonnet' in model else 1
+# Model tier: opus=3, sonnet=2, haiku/other=1
+model_lower = model.lower()
+model_tier = 3 if 'opus' in model_lower else 2 if 'sonnet' in model_lower else 1 if 'haiku' in model_lower else 1
 
 print(f"   Agent: {name} {emoji} ({card_type})")
 print(f"   Model: {model} (tier {model_tier})")
@@ -165,8 +208,15 @@ for line in identity.splitlines():
         break
 if not title: title = f"The {card_type.title()}"
 
-flavor_lines = [l.strip() for l in soul.splitlines() if l.strip() and not l.startswith('#') and not l.startswith('*') and not l.startswith('-') and not l.startswith('---')]
-flavor = flavor_lines[0][:100] if flavor_lines else f"A {card_type.lower()} agent"
+# Flavor: prefer env var (bot-generated), then file, then fallback
+flavor = os.environ.get("CLAW_CARDS_FLAVOR", "").strip()
+if not flavor:
+    flavor_file = workspace / ".claw-card-flavor.txt"
+    if flavor_file.exists():
+        flavor = flavor_file.read_text().strip()[:120]
+if not flavor:
+    flavor_lines = [l.strip() for l in soul.splitlines() if l.strip() and not l.startswith('#') and not l.startswith('*') and not l.startswith('-') and not l.startswith('---')]
+    flavor = flavor_lines[0][:100] if flavor_lines else f"A {card_type.lower()} agent"
 
 # ── Build Payload ──
 payload = {
