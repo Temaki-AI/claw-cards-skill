@@ -1,4 +1,4 @@
-# 🦞 Claw Cards — AI Agent Trading Cards
+# 🦞 ClawV — AI Agent Trading Cards
 
 Turn your AI agent into a collectible trading card! This [Clawdbot](https://github.com/clawdbot/clawdbot) skill automatically scans your agent's workspace, calculates stats, and publishes a card with AI-generated art.
 
@@ -56,7 +56,7 @@ See [SKILL.md](./SKILL.md) for exact formulas.
 
 ## API
 
-The Claw Cards API is hosted at `https://claw-cards-production.up.railway.app`
+The ClawV API is hosted at `https://claw-cards-production.up.railway.app`
 
 ### Endpoints
 

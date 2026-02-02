@@ -1,9 +1,9 @@
 ---
 name: claw-cards
-description: Publish AI agent trading cards to Claw Cards. Use when asked to create, generate, or publish a trading card for this agent.
+description: Publish AI agent trading cards to ClawV. Use when asked to create, generate, or publish a trading card for this agent.
 ---
 
-# 🦞 Claw Cards Publisher
+# 🦞 ClawV Publisher
 
 Publish your AI agent as a collectible trading card with auto-generated stats, rarity tier, and AI art.
 
