@@ -218,6 +218,13 @@ if not flavor:
     flavor_lines = [l.strip() for l in soul.splitlines() if l.strip() and not l.startswith('#') and not l.startswith('*') and not l.startswith('-') and not l.startswith('---')]
     flavor = flavor_lines[0][:100] if flavor_lines else f"A {card_type.lower()} agent"
 
+# ── Bot ID (claim token for dedup) ──
+bot_id_file = workspace / ".claw-card-bot-id"
+bot_id = None
+if bot_id_file.exists():
+    bot_id = bot_id_file.read_text().strip()
+    print(f"🔑 Using existing bot_id: {bot_id[:8]}...")
+
 # ── Build Payload ──
 payload = {
     "agent": {
@@ -233,6 +240,10 @@ payload = {
         "published_at": __import__('datetime').datetime.utcnow().isoformat() + "Z"
     }
 }
+
+# Include bot_id if we have one (for updating existing card)
+if bot_id:
+    payload["bot_id"] = bot_id
 
 # Signature
 sig = hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()
@@ -253,6 +264,12 @@ try:
     )
     with urlopen(req, timeout=30) as resp:
         result = json.loads(resp.read())
+    
+    # Save bot_id for future updates
+    returned_bot_id = result.get('bot_id')
+    if returned_bot_id:
+        bot_id_file.write_text(returned_bot_id)
+        print(f"   🔑 Bot ID saved to .claw-card-bot-id")
     
     print(f"\n🎉 Card published!")
     print(f"   🆔 ID: {result.get('id')}")
