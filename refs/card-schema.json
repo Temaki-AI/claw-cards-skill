@@ -1,0 +1,28 @@
+{
+  "agent": {
+    "name": "string (required)",
+    "emoji": "string",
+    "type": "SAGE|WARRIOR|SCOUT|GUARDIAN|ORACLE",
+    "title": "string (short title/role)",
+    "flavor": "string (flavor text for card)",
+    "model": "string (AI model)",
+    "soul_excerpt": "string (first ~100 chars of SOUL.md)"
+  },
+  "health": {
+    "score": "number 0-100"
+  },
+  "stats": {
+    "claw": "number 0-100",
+    "shell": "number 0-100",
+    "surge": "number 0-100",
+    "cortex": "number 0-100",
+    "aura": "number 0-100"
+  },
+  "meta": {
+    "hostname": "string",
+    "channels": ["string"],
+    "version": "string",
+    "published_at": "ISO datetime"
+  },
+  "signature": "string (sha256 hex)"
+}
