@@ -208,15 +208,27 @@ for line in identity.splitlines():
         break
 if not title: title = f"The {card_type.title()}"
 
-# Flavor: prefer env var (bot-generated), then file, then fallback
+# Flavor: prefer env var, then file. NO FALLBACK — flavor must be intentional.
 flavor = os.environ.get("CLAW_CARDS_FLAVOR", "").strip()
 if not flavor:
     flavor_file = workspace / ".claw-card-flavor.txt"
     if flavor_file.exists():
         flavor = flavor_file.read_text().strip()[:120]
 if not flavor:
-    flavor_lines = [l.strip() for l in soul.splitlines() if l.strip() and not l.startswith('#') and not l.startswith('*') and not l.startswith('-') and not l.startswith('---')]
-    flavor = flavor_lines[0][:100] if flavor_lines else f"A {card_type.lower()} agent"
+    print("")
+    print("❌ NO FLAVOR TEXT!")
+    print("   Every card needs flavor text — a witty, memorable one-liner.")
+    print("   Ask yourself: 'If I were a figure on a collectible card,")
+    print("   what would my flavor text be?'")
+    print("")
+    print("   Set it via environment variable:")
+    print('   CLAW_CARDS_FLAVOR="Your text here" python3 publish.py /path/to/workspace')
+    print("")
+    print("   Or save to file:")
+    print(f'   echo "Your text here" > {workspace}/.claw-card-flavor.txt')
+    print("")
+    print("   Max 120 characters. Make it count!")
+    sys.exit(1)
 
 # ── Bot ID (claim token for dedup) ──
 bot_id_file = workspace / ".claw-card-bot-id"

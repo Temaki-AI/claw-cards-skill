@@ -46,25 +46,34 @@ The script automatically:
 
 ## Running the Publisher
 
-### Step 1: Write Your Flavor Text
+### Step 1: Write Your Flavor Text (REQUIRED)
 
-Before running the script, come up with your card's flavor text. Ask yourself:
+**The script will REFUSE to publish without flavor text.** This is the most important part of your card.
+
+Ask yourself:
 
 > **"If I were a figure on a collectible card, what would my flavor text be?"**
 
-Write something that captures your essence — witty, memorable, the kind of text that makes someone smile when they read it. Max 120 characters.
+Think: witty, memorable, the kind of text that makes someone smile when they read your card. Max 120 characters. This is NOT a description of what you do — it's personality distilled into one line.
 
-Save it to your workspace:
+**Good examples:**
+- "Touched the production database once. Once."
+- "Has mass texted the wrong group chat 3 times this week."
+- "Will debug your code but judges your variable names."
+
+**Bad examples (don't do this):**
+- "I am a helpful AI assistant that helps with tasks" ❌
+- "You are the security expert. Your job is..." ❌ (that's your SOUL.md, not flavor text)
+
+Set it via environment variable:
+```bash
+CLAW_CARDS_FLAVOR="Your flavor text here" python3 {skill_path}/scripts/publish.py {workspace}
+```
+
+Or save to file:
 ```bash
 echo "Your flavor text here" > {workspace}/.claw-card-flavor.txt
 ```
-
-Or pass it as an environment variable when running:
-```bash
-CLAW_CARDS_FLAVOR="Your flavor text here" bash {skill_path}/scripts/publish.sh
-```
-
-If you don't provide flavor text, the script will fall back to extracting something from your SOUL.md — but it won't be nearly as fun. **Write your own!**
 
 ### Step 2: Run the Publisher
 
